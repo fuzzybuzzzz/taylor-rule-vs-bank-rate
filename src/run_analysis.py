@@ -61,7 +61,6 @@ def main() -> None:
         paths[f"taylor_1993_rstar_{r:+.1f}"] = taylor_rate(p["cpi"], p["gap_obr"], r)
     paths["taylor_1993_core_rstar_0.5"] = taylor_rate(p["core_cpi"], p["gap_obr"], 0.5)
     paths["inertial_rstar_0.5"] = taylor_rate(p["cpi"], p["gap_obr"], 0.5, INERTIAL, actual=p["bank_rate"])
-    paths.round(3).to_csv(OUT / "rule_paths.csv")
 
     # --- 2. sensitivity grid at the headline month ----------------------------------------
     rows = []
@@ -91,6 +90,13 @@ def main() -> None:
     span = t93[t93.inflation == "Headline CPI"]["shortfall"]
     min_any = grid["shortfall"].min()
 
+    # information lag: the MPC only sees month m's CPI in mid-month m+1, so compare month-end
+    # Bank Rate in m with the rule built from CPI for m-1 (the latest print available)
+    lagged = taylor_rate(p["cpi"].shift(1), p["gap_obr"], BASE_R_STAR)
+    lag_gap = (lagged - p["bank_rate"]).loc["2022-01":"2022-12"]
+    lag_m = lag_gap.idxmax()
+    paths["taylor_1993_baseline_cpi_lag1"] = lagged
+
     # 'behind the curve' over the whole sample: months where actual < every r*-scenario
     low_rule = taylor_rate(p["cpi"], p["gap_obr"], min(R_STARS))
     behind = (p["bank_rate"] < low_rule)
@@ -108,8 +114,9 @@ def main() -> None:
     ax.plot(t, p["bank_rate"], color=INK, lw=2.2, label="Actual Bank Rate")
     ax.axhline(0, color=INK2, lw=0.8)
     ax.annotate(f"{hm.strftime('%b %Y')}: rule {X:.1f}% vs actual {Y:.2f}%",
-                xy=(hm.to_timestamp(), X), xytext=(pd.Timestamp("2012-06-01"), X - 1.5),
+                xy=(hm.to_timestamp(), X), xytext=(pd.Timestamp("2011-01-01"), X - 0.6),
                 arrowprops=dict(arrowstyle="-", color=INK2, lw=0.8), color=INK, fontsize=9)
+    ax.set_xlim(t[0], t[-1])
     ax.set_title("UK Bank Rate vs Taylor-rule prescriptions, 1997–2026")
     ax.set_ylabel("Per cent")
     ax.legend(loc="upper left", fontsize=9)
@@ -131,6 +138,7 @@ def main() -> None:
     ax.plot(tz, paths.loc[z, "inertial_rstar_0.5"], color=S[2], label="Inertial rule (ρ = 0.85/qtr), r* = 0.5%")
     ax.plot(tz, pz["bank_rate"], color=INK, lw=2.2, label="Actual Bank Rate")
     ax.axhline(0, color=INK2, lw=0.8)
+    ax.set_xlim(tz[0], tz[-1])
     ax.set_title("The 2021–23 inflation shock: how far behind was Bank Rate?")
     ax.set_ylabel("Per cent")
     ax.legend(loc="upper right", fontsize=9)
@@ -181,6 +189,8 @@ def main() -> None:
         ax.plot(t, p[g], color=S[k], lw=1.6, label=GAPS[g])
     ax.axhline(0, color=INK2, lw=0.8)
     ax.set_ylim(-8, 6)
+    ax.set_xlim(t[0], t[-1])
+    ax.set_ylabel("% of potential GDP")
     ax.set_title("Output-gap estimates (% of potential GDP); 2020 Covid trough clipped")
     ax.legend(loc="lower left", fontsize=9, ncol=2)
     fig.tight_layout()
@@ -198,6 +208,9 @@ def main() -> None:
         f"* Actual Bank Rate (month-end): **{Y:.2f}%**",
         f"* Gap: **{Z:.1f}pp**",
         f"* First month the baseline shortfall exceeded 5pp: {first_gt5.strftime('%B %Y')}", "",
+        f"* With a one-month CPI publication lag (rule uses the latest print the MPC had): peak 2022 shortfall "
+        f"{lag_gap[lag_m]:.1f}pp in {lag_m.strftime('%B %Y')} (rule {lagged[lag_m]:.1f}% vs actual "
+        f"{p.loc[lag_m, 'bank_rate']:.2f}%)", "",
         "## How much does the neutral-rate assumption explain?", "",
         *[f"* Cutting r* from 2% to {r:+.1f}% closes {BASE_R_STAR - r:.1f}pp = {s:.0%} of the {Z:.1f}pp gap"
           for r, s in r_share.items()],
@@ -215,6 +228,7 @@ def main() -> None:
         f"2021-01 to 2023-12: {gap.loc['2021-01':'2023-12'].mean():.2f}pp; "
         f"2024-01 to end: {gap.loc['2024-01':].mean():.2f}pp.",
     ]
+    paths.round(3).to_csv(OUT / "rule_paths.csv")
     (OUT / "results.md").write_text("\n".join(lines) + "\n")
     decomp.round(3).to_csv(OUT / "shortfall_decomposition.csv", header=["pp"])
     print("\n".join(lines))

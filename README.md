@@ -16,6 +16,8 @@ shortfall of **15.9 percentage points**.
 16.7pp. The gap comes from the rule's response to 11% inflation (π plus 0.5(π − 2), together
 15.7pp), not from r* or the output gap (+0.5pp). Using core CPI (excluding energy and food) and
 r* = 0.5% shrinks the shortfall to 7.5pp, and the smallest shortfall anywhere in the grid is 6.0pp.
+Allowing for the one-month CPI publication lag (the rule only uses inflation the MPC had actually
+seen) barely changes this: the peak 2022 shortfall is 15.1pp in November 2022 (rule 18.1% vs 3.00%).
 So the "behind the curve" verdict holds under every specification. What changes it is how much of
 the 2022 energy shock you think policy should have looked through, not the choice of r*.
 
@@ -56,8 +58,9 @@ Rule: `i* = r* + π + a_π(π − π*) + a_y·gap`, π* = 2%.
 
 * Before December 2003 the MPC targeted RPIX at 2.5%. Applying a 2% CPI target to that period
   biases the rule down (CPI ran below RPIX). This is why the 1997–2003 rule sits below Bank Rate.
-* The rule uses CPI for month *m* against month-end Bank Rate in *m*. The MPC only sees that print
-  about 3–4 weeks later, so the comparison is slightly generous to the rule.
+* The baseline uses CPI for month *m* against month-end Bank Rate in *m*. The MPC only sees that
+  print about 3–4 weeks later, so `results/results.md` also reports a lagged-CPI version
+  (peak shortfall 15.1pp in November 2022 instead of 15.9pp in October).
 * The OBR gap is a 2026 vintage, so it is revised, not real time. The real-time HP variant
   addresses this partly. HP gaps are distorted around Covid (see `figures/05_output_gap_measures.png`).
 * The inertial rule is anchored on last month's actual rate, so by construction it tracks Bank
@@ -71,6 +74,7 @@ Rule: `i* = r* + π + a_π(π − π*) + a_y·gap`, π* = 2%.
 pip install -r requirements.txt
 python src/fetch_data.py      # optional: refresh data/raw from source
 python src/run_analysis.py    # builds data/processed/panel.csv, results/, figures/
+python -m pytest -q           # 7 sanity tests: data points vs source, hand-computed headline, HP filter, parsers
 ```
 
 ## Layout
@@ -83,6 +87,7 @@ src/run_analysis.py   rule paths, sensitivity grid, decomposition, charts, resul
 data/raw/             source snapshots (24 Nov 2026)
 data/processed/       monthly panel
 results/  figures/    outputs
+tests/                sanity tests
 ```
 
 ## CV bullet (filled in)

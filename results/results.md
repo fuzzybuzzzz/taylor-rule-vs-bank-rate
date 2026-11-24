@@ -10,6 +10,8 @@ Sample: 1997-05 to 2026-10 (monthly; last month with both CPI and Bank Rate).
 * Gap: **15.9pp**
 * First month the baseline shortfall exceeded 5pp: January 2011
 
+* With a one-month CPI publication lag (rule uses the latest print the MPC had): peak 2022 shortfall 15.1pp in November 2022 (rule 18.1% vs actual 3.00%)
+
 ## How much does the neutral-rate assumption explain?
 
 * Cutting r* from 2% to +1.5% closes 0.5pp = 3% of the 15.9pp gap
